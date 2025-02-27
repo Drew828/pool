@@ -24,11 +24,19 @@ conn.commit()
 # ------------------------------------------------
 # 2. Detect balls (circles) in the frame using HoughCircles
 # ------------------------------------------------
+import cv2
+import numpy as np
+
 def detect_balls_in_frame(image_bgr):
     """
-    Uses both HoughCircles and contour detection to find pool balls.
+    Uses both HoughCircles and contour detection to find pool balls,
+    excluding detections within 5% of the periphery of the frame.
     Returns a list of detected (x, y, r) circles.
     """
+    height, width = image_bgr.shape[:2]
+    margin_x = int(width * 0.07) #0.05 pretty good but not perfect,
+    margin_y = int(height * 0.07)
+
     gray = cv2.cvtColor(image_bgr, cv2.COLOR_BGR2GRAY)
     blurred = cv2.GaussianBlur(gray, (5, 5), 0)
 
@@ -45,7 +53,10 @@ def detect_balls_in_frame(image_bgr):
     
     hough_detected = []
     if hough_circles is not None:
-        hough_detected = np.uint16(np.around(hough_circles[0, :])).tolist()
+        for circle in np.uint16(np.around(hough_circles[0, :])):
+            x, y, r = circle
+            if margin_x < x < width - margin_x and margin_y < y < height - margin_y:
+                hough_detected.append((x, y, r))
 
     # 2. Contour Detection
     contours, _ = cv2.findContours(edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
@@ -55,13 +66,14 @@ def detect_balls_in_frame(image_bgr):
         (x, y), radius = cv2.minEnclosingCircle(contour)
         x, y, radius = int(x), int(y), int(radius)
 
-        if 5 < radius < 15:  # Adjust based on pool ball size
+        if 10 < radius < 20 and margin_x < x < width - margin_x and margin_y < y < height - margin_y:
             contour_detected.append((x, y, radius))
 
-    # Merge results from both methods (optional, to avoid duplicates)
-    final_detections = hough_detected + contour_detected  # Can use clustering for better merging
+    # Merge results from both methods
+    final_detections = hough_detected + contour_detected
 
     return final_detections
+
 
 
 
