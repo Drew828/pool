@@ -63,8 +63,8 @@ def detect_balls_in_frame(image_bgr):
         cv2.HOUGH_GRADIENT,
         dp=1,
         minDist=20,
-        param1=50,
-        param2=30,
+        param1=12.5, #50 weak, 1 too noisy, 12.5 and 25 were decent
+        param2=25,   # 15 detected all circuls but too much noise 60 stopped all detection, 30 allowed for some
         minRadius=5,
         maxRadius=30  # adjust based on scale of your GIF
     )
